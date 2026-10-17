@@ -125,11 +125,36 @@ main{max-width:1080px;margin:0 auto;padding:8px 20px 0}
 .fx{display:none;margin-top:-2px}
 .chap.fxopen .fx{display:block;animation:fadein .2s ease}
 @keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.fx pre{
-  font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:.76rem;line-height:1.65;
-  color:#c3cbdd;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.06);
-  border-radius:11px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;
-  max-height:220px;overflow-y:auto;
+/* formula panel */
+.fx-panel{background:rgba(0,0,0,.30);border:1px solid color-mix(in srgb, var(--sc,#38bdf8) 24%, transparent);border-radius:12px;overflow:hidden}
+.fx-head{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025)}
+.fx-head>span{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb, var(--sc,#38bdf8) 85%, #fff)}
+.fx-copy{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--card-br);color:var(--mut);font-size:.68rem;font-weight:600;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s}
+.fx-copy:hover{color:var(--txt);border-color:rgba(255,255,255,.25)}
+.fx-copy.ok{color:#34d399;border-color:rgba(52,211,153,.45)}
+.fx-copy svg{width:11px;height:11px}
+.fx-list{max-height:300px;overflow-y:auto;padding:8px 0 10px}
+.fx-sec{padding:10px 14px 3px;font-size:.66rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:color-mix(in srgb, var(--sc,#38bdf8) 88%, #fff)}
+.fx-row{display:flex;gap:10px;align-items:baseline;padding:4px 14px;font-size:.86rem;line-height:1.6}
+.fx-row:hover{background:rgba(255,255,255,.04)}
+.fx-label{flex-shrink:0;color:var(--mut);font-size:.79rem}
+.fx-txt{color:#e2e8f5;font-family:'Cambria Math','STIX Two Math',Georgia,'Times New Roman',serif;letter-spacing:.015em;word-break:break-word}
+
+/* subject chips */
+.chips{display:flex;gap:7px;max-width:1080px;margin:0 auto;padding:0 20px 11px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:7px;
+  padding:7px 15px;border-radius:99px;cursor:pointer;font-family:inherit;
+  font-size:.8rem;font-weight:600;color:var(--mut);
+  background:var(--card);border:1px solid var(--card-br);transition:all .15s;
+}
+.chip .cdot{width:8px;height:8px;border-radius:3px;background:var(--cc,var(--acc))}
+.chip:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
+.chip.active{
+  color:color-mix(in srgb, var(--cc,#38bdf8) 85%, #fff);
+  background:color-mix(in srgb, var(--cc,#38bdf8) 22%, transparent);
+  border-color:color-mix(in srgb, var(--cc,#38bdf8) 55%, transparent);
 }
 
 /* ---------- mini player ---------- */
@@ -156,8 +181,11 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
 @media(max-width:520px){
   .hero{padding:26px 16px 14px}
   .toolbar-in{padding:10px 16px}
+  .chips{padding:0 16px 10px}
   main{padding:4px 16px 0}
   .tab{padding:8px 14px}
+  .fx-row{padding:4px 12px}
+  .fx-sec{padding-left:12px;padding-right:12px}
 }
 </style>
 </head>
@@ -185,6 +213,12 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
       <button class="tab active" data-cls="12">12th</button>
       <button class="tab" data-cls="11">11th</button>
     </div>
+  </div>
+  <div class="chips">
+    <button class="chip active" data-subj="all"><span class="cdot"></span>All subjects</button>
+    <button class="chip" data-subj="Physics" style="--cc:var(--phy)"><span class="cdot"></span>Physics</button>
+    <button class="chip" data-subj="Chemistry" style="--cc:var(--che)"><span class="cdot"></span>Chemistry</button>
+    <button class="chip" data-subj="Maths" style="--cc:var(--mat)"><span class="cdot"></span>Maths</button>
   </div>
 </div>
 
@@ -219,17 +253,67 @@ const miniTime = document.getElementById('mini-time');
 const miniBar = document.getElementById('mini-bar');
 
 let curCls = localStorage.getItem('pcm-cls') || '12';
+let curSubj = localStorage.getItem('pcm-subj') || 'all';
+const SUBJECTS = ['Physics','Chemistry','Maths'];
+if(curSubj !== 'all' && !SUBJECTS.includes(curSubj)) curSubj = 'all';
 let currentId = null;
 const audio = new Audio();
 audio.preload = 'none';
 
 const fmt = s => { if(!isFinite(s)) return '--:--'; s = Math.floor(s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
 
+function buildFormulas(host, c){
+  const panel = document.createElement('div'); panel.className = 'fx-panel';
+  const head = document.createElement('div'); head.className = 'fx-head';
+  const title = document.createElement('span'); title.textContent = 'Formulas & reference';
+  const cp = document.createElement('button'); cp.className = 'fx-copy'; cp.type = 'button';
+  cp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span>';
+  cp.addEventListener('click', async () => {
+    const text = c.formulas || '';
+    try{ await navigator.clipboard.writeText(text); }
+    catch(e){
+      const ta = document.createElement('textarea'); ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(_){}
+      ta.remove();
+    }
+    cp.classList.add('ok'); cp.querySelector('span').textContent = 'Copied';
+    setTimeout(() => { cp.classList.remove('ok'); cp.querySelector('span').textContent = 'Copy'; }, 1400);
+  });
+  head.append(title, cp); panel.appendChild(head);
+  const list = document.createElement('div'); list.className = 'fx-list';
+  for(const raw of (c.formulas || '').split('\n')){
+    const line = raw.trim(); if(!line) continue;
+    if(/:$/.test(line) && !line.includes('=')){
+      const s = document.createElement('div'); s.className = 'fx-sec';
+      s.textContent = line.replace(/:+$/, '');
+      list.appendChild(s); continue;
+    }
+    for(const part of line.split(' | ')){
+      if(!part) continue;
+      const row = document.createElement('div'); row.className = 'fx-row';
+      const m = part.match(/^([^:|=]{1,46}?):\s+(.+)$/);
+      if(m){
+        const l = document.createElement('span'); l.className = 'fx-label'; l.textContent = m[1] + ':';
+        const b = document.createElement('span'); b.className = 'fx-txt'; b.textContent = m[2];
+        row.append(l, b);
+      }else{
+        const b = document.createElement('span'); b.className = 'fx-txt'; b.textContent = part;
+        row.appendChild(b);
+      }
+      list.appendChild(row);
+    }
+  }
+  panel.appendChild(list); host.appendChild(panel);
+}
+
 function render(){
   const q = searchEl.value.trim().toLowerCase();
   clearBtn.classList.toggle('show', !!q);
   main.innerHTML = '';
-  for(const s of ['Physics','Chemistry','Maths']){
+  for(const s of SUBJECTS){
+    if(curSubj !== 'all' && s !== curSubj) continue;
     const items = DATA.filter(c => c.cls === curCls && c.subject === s &&
       (!q || (c.title+' '+c.tags).toLowerCase().includes(q)));
     if(!items.length) continue;
@@ -256,8 +340,8 @@ function render(){
           </div>
         </div>
         <button class="fxbtn">Formulas &amp; reference <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="fx"><pre></pre></div>`;
-      d.querySelector('pre').textContent = c.formulas || '';
+        <div class="fx"></div>`;
+      buildFormulas(d.querySelector('.fx'), c);
       d.querySelector('.card-play').addEventListener('click', () => togglePlay(c, id));
       d.querySelector('.card-bar').addEventListener('click', e => seek(e, id));
       d.querySelector('.fxbtn').addEventListener('click', () => d.classList.toggle('fxopen'));
@@ -340,6 +424,16 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 }));
 searchEl.addEventListener('input', render);
 clearBtn.addEventListener('click', () => { searchEl.value = ''; render(); searchEl.focus(); });
+
+document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+  document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  ch.classList.add('active');
+  curSubj = ch.dataset.subj;
+  localStorage.setItem('pcm-subj', curSubj);
+  render();
+}));
+// restore saved subject chip + tab
+document.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x.dataset.subj === curSubj));
 
 // restore saved tab
 if(curCls !== '12'){
