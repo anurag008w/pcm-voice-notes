@@ -273,6 +273,23 @@ a.stat:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
 .cp-skip.pulse{animation:cppulse .35s ease}
 @keyframes cppulse{0%{transform:scale(1)}40%{transform:scale(1.18);border-color:rgba(56,189,248,.65)}100%{transform:scale(1)}}
 
+
+/* extra audios + queue controls */
+.cp-tracks{flex-wrap:wrap}
+.cp-extras{display:none;flex-direction:column;gap:2px}
+.cp-qadd svg{width:12px;height:12px}
+.cp-qhead{display:flex;align-items:center;justify-content:space-between;padding:2px 8px 4px}
+.cp-qhead span{font-size:.7rem;color:var(--mut);font-weight:600}
+.cp-qclear{border:1px solid var(--card-br);background:transparent;color:var(--mut);font-family:inherit;font-weight:700;font-size:.72rem;padding:5px 12px;border-radius:8px;cursor:pointer;transition:all .15s}
+.cp-qclear:hover{color:#f87171;border-color:rgba(248,113,113,.4)}
+.cp-qhint{font-size:.64rem;color:var(--mut);opacity:.7;padding:0 10px 8px}
+.cp-qitem{touch-action:pan-y}
+.cp-qitem.dragging{position:relative;z-index:5;background:#182238;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+.cp-qitem:not(.dragging){transition:transform .16s ease, opacity .16s ease}
+.cp-qdrag{flex-shrink:0;width:26px;height:34px;border:none;background:transparent;color:var(--mut);cursor:grab;display:flex;align-items:center;justify-content:center;touch-action:none;font-family:inherit;padding:0}
+.cp-qdrag:active{cursor:grabbing}
+.cp-qdrag svg{width:14px;height:14px;opacity:.7}
+
 /* ---------- mini player ---------- */
 #mini{
   position:fixed;left:50%;transform:translate(-50%,140%);bottom:calc(14px + env(safe-area-inset-bottom));
@@ -362,6 +379,7 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
       <button id="cp-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="cp-tracks" id="cp-tracks"></div>
+    <div class="cp-extras" id="cp-extras"></div>
     <div class="cp-seekwrap">
       <input type="range" id="cp-seek" min="0" max="1000" step="1" value="0" aria-label="Seek">
       <div class="cp-times"><span id="cp-cur">0:00</span><span id="cp-dur">--:--</span></div>
@@ -465,6 +483,90 @@ function cpQueueAdd(key, tIdx){
   return true;
 }
 function cpQueueRemove(i){ cpQueue.splice(i, 1); cpSaveQueue(); cpRenderQueue(); }
+function cpQueueFront(key, tIdx){
+  const t = COURSE[key] && COURSE[key][tIdx];
+  if(!t || !t.audio) return false;
+  if(!cpChapter){ openCoursePlayer(key, tIdx); return true; }
+  cpQueue.unshift({key, track: tIdx});
+  cpSaveQueue(); cpRenderQueue();
+  return true;
+}
+const SVG_GRIP = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+let cpSwipeSuppress = false;
+function cpAttachDrag(row, qi){
+  const grip = row.querySelector('.cp-qdrag');
+  grip.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const list = row.parentElement;
+    const items = [...list.querySelectorAll('.cp-qitem')];
+    const rowH = row.offsetHeight;
+    const startY = e.clientY, startIdx = qi;
+    let curIdx = startIdx;
+    row.classList.add('dragging');
+    try{ grip.setPointerCapture(e.pointerId); }catch(err){}
+    const move = ev => {
+      const dy = ev.clientY - startY;
+      row.style.transform = `translateY(${dy}px)`;
+      const newIdx = Math.max(0, Math.min(items.length - 1, startIdx + Math.round(dy / rowH)));
+      if(newIdx !== curIdx){
+        items.forEach((it, i) => {
+          if(it === row) return;
+          let shift = 0;
+          if(startIdx < newIdx){ if(i > startIdx && i <= newIdx) shift = -rowH; }
+          else if(i < startIdx && i >= newIdx) shift = rowH;
+          it.style.transform = shift ? `translateY(${shift}px)` : '';
+        });
+        curIdx = newIdx;
+      }
+    };
+    const done = () => {
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', done);
+      grip.removeEventListener('pointercancel', done);
+      if(curIdx !== startIdx){
+        const m = cpQueue.splice(startIdx, 1)[0];
+        cpQueue.splice(curIdx, 0, m);
+        cpSaveQueue();
+      }
+      cpRenderQueue();
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', done);
+    grip.addEventListener('pointercancel', done);
+  });
+}
+function cpAttachSwipe(row, qi){
+  let sx = 0, sy = 0, pid = null, swiping = false;
+  row.addEventListener('pointerdown', e => {
+    if(e.target.closest('.cp-qdrag') || e.target.closest('.cp-qx')) return;
+    sx = e.clientX; sy = e.clientY; pid = e.pointerId; swiping = false;
+  });
+  row.addEventListener('pointermove', e => {
+    if(pid === null || e.pointerId !== pid) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if(!swiping && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) + 8){
+      swiping = true;
+      try{ row.setPointerCapture(pid); }catch(err){}
+    }
+    if(swiping){
+      row.style.transform = `translateX(${dx}px)`;
+      row.style.opacity = String(1 - Math.min(Math.abs(dx) / 170, .75));
+    }
+  });
+  const end = e => {
+    if(pid === null || e.pointerId !== pid) return;
+    const dx = e.clientX - sx;
+    const was = swiping;
+    pid = null; swiping = false;
+    if(was){
+      cpSwipeSuppress = true; setTimeout(() => { cpSwipeSuppress = false; }, 80);
+      if(Math.abs(dx) > 80){ cpQueueRemove(qi); return; }
+      row.style.transform = ''; row.style.opacity = '';
+    }
+  };
+  row.addEventListener('pointerup', end);
+  row.addEventListener('pointercancel', end);
+}
 function cpPlayNext(){
   while(cpQueue.length){
     const n = cpQueue.shift(); cpSaveQueue(); cpRenderQueue();
@@ -483,20 +585,36 @@ function cpRenderQueue(){
     const e = document.createElement('div'); e.className = 'cp-qempty'; e.textContent = 'Queue empty';
     wrap.appendChild(e); return;
   }
+  const head = document.createElement('div'); head.className = 'cp-qhead';
+  const hint = document.createElement('span');
+  hint.textContent = cpQueue.length + (cpQueue.length === 1 ? ' track' : ' tracks');
+  const clear = document.createElement('button'); clear.className = 'cp-qclear'; clear.type = 'button';
+  clear.textContent = 'Clear';
+  clear.addEventListener('click', () => { cpQueue = []; cpSaveQueue(); cpRenderQueue(); });
+  head.append(hint, clear);
+  wrap.appendChild(head);
+  const gh = document.createElement('div'); gh.className = 'cp-qhint';
+  gh.textContent = 'drag \u283F to reorder \u00B7 swipe to remove';
+  wrap.appendChild(gh);
   cpQueue.forEach((q, qi) => {
     const info = cpChapterInfo(q.key);
     const t = (COURSE[q.key] || [])[q.track];
     const row = document.createElement('div'); row.className = 'cp-qitem';
+    const grip = document.createElement('button'); grip.className = 'cp-qdrag'; grip.type = 'button';
+    grip.setAttribute('aria-label', 'Drag to reorder'); grip.innerHTML = SVG_GRIP;
     const main = document.createElement('button'); main.className = 'cp-qmain'; main.type = 'button';
     main.innerHTML = `<span class="cp-cnum">${qi + 1}</span><span class="cp-ct">${info.title}</span><em>${t ? t.name : ''}</em>`;
     main.addEventListener('click', () => {
+      if(cpSwipeSuppress) return;
       cpQueue.splice(qi, 1); cpSaveQueue(); cpRenderQueue();
       openCoursePlayer(q.key, q.track);
     });
     const x = document.createElement('button'); x.className = 'cp-qx'; x.type = 'button';
     x.setAttribute('aria-label', 'Remove from queue'); x.innerHTML = '&times;';
     x.addEventListener('click', () => cpQueueRemove(qi));
-    row.append(main, x);
+    row.append(grip, main, x);
+    cpAttachDrag(row, qi);
+    cpAttachSwipe(row, qi);
     wrap.appendChild(row);
   });
 }
@@ -569,15 +687,46 @@ function openCoursePlayer(key, tIdx, autoplay = true){
 }
 function cpRenderTracks(){
   const wrap = document.getElementById('cp-tracks'); wrap.innerHTML = '';
+  const xwrap = document.getElementById('cp-extras');
+  if(xwrap){ xwrap.innerHTML = ''; xwrap.style.display = 'none'; }
+  const MAIN = ['Board', 'JEE', 'MHT-CET'];
   COURSE[cpChapter].forEach((t, i) => {
-    const b = document.createElement('button');
-    b.className = 'cp-tchip' + (i === cpTrackIdx ? ' active' : '');
+    if(MAIN.indexOf(t.name) >= 0 || !xwrap){
+      const b = document.createElement('button');
+      b.className = 'cp-tchip' + (i === cpTrackIdx ? ' active' : '');
+      b.disabled = !t.audio;
+      b.innerHTML = t.name + (t.audio ? (t.dur ? `<em>${t.dur}</em>` : '') : '<em>coming soon</em>');
+      if(t.audio) b.addEventListener('click', () => { if(i !== cpTrackIdx) openCoursePlayer(cpChapter, i); });
+      wrap.appendChild(b);
+      return;
+    }
+    // extra audios for this chapter: listed directly, playable and queueable
+    const row = document.createElement('div'); row.className = 'cp-chaprow';
+    const b = document.createElement('button'); b.type = 'button';
+    b.className = 'cp-chapitem' + (i === cpTrackIdx ? ' active' : '');
     b.disabled = !t.audio;
-    b.innerHTML = t.name + (t.audio ? (t.dur ? `<em>${t.dur}</em>` : '') : '<em>coming soon</em>');
+    b.innerHTML = `<span class="cp-ct">${t.name}</span><em>${t.audio ? (t.dur || '') : 'soon'}</em>`;
     if(t.audio) b.addEventListener('click', () => { if(i !== cpTrackIdx) openCoursePlayer(cpChapter, i); });
-    wrap.appendChild(b);
+    row.appendChild(b);
+    if(t.audio){
+      const qnext = document.createElement('button'); qnext.className = 'cp-qadd'; qnext.type = 'button';
+      qnext.setAttribute('aria-label', 'Play next'); qnext.innerHTML = SVG_PLAY;
+      qnext.addEventListener('click', () => {
+        if(cpQueueFront(cpChapter, i)){ qnext.classList.add('ok'); setTimeout(() => qnext.classList.remove('ok'), 900); }
+      });
+      const qadd = document.createElement('button'); qadd.className = 'cp-qadd'; qadd.type = 'button';
+      qadd.setAttribute('aria-label', 'Add to end of queue'); qadd.textContent = '+';
+      qadd.addEventListener('click', () => {
+        if(cpQueueAdd(cpChapter, i)){ qadd.classList.add('ok'); qadd.textContent = '\u2713';
+          setTimeout(() => { qadd.classList.remove('ok'); qadd.textContent = '+'; }, 1100); }
+      });
+      row.append(qnext, qadd);
+    }
+    xwrap.appendChild(row);
   });
+  if(xwrap && xwrap.children.length) xwrap.style.display = 'flex';
 }
+
 function cpRenderDl(){
   const wrap = document.getElementById('cp-dl'); wrap.innerHTML = '';
   const t = COURSE[cpChapter][cpTrackIdx];
@@ -614,13 +763,18 @@ function cpRenderChaps(){
     const row = document.createElement('div'); row.className = 'cp-chaprow';
     row.appendChild(b);
     if(firstReady >= 0){
+      const qnext = document.createElement('button'); qnext.className = 'cp-qadd'; qnext.type = 'button';
+      qnext.setAttribute('aria-label', 'Play next'); qnext.innerHTML = SVG_PLAY;
+      qnext.addEventListener('click', () => {
+        if(cpQueueFront(key, same)){ qnext.classList.add('ok'); setTimeout(() => qnext.classList.remove('ok'), 900); }
+      });
       const qadd = document.createElement('button'); qadd.className = 'cp-qadd'; qadd.type = 'button';
-      qadd.setAttribute('aria-label', 'Add to queue'); qadd.textContent = '+';
+      qadd.setAttribute('aria-label', 'Add to end of queue'); qadd.textContent = '+';
       qadd.addEventListener('click', () => {
         if(cpQueueAdd(key, same)){ qadd.classList.add('ok'); qadd.textContent = '\u2713';
           setTimeout(() => { qadd.classList.remove('ok'); qadd.textContent = '+'; }, 1100); }
       });
-      row.appendChild(qadd);
+      row.append(qnext, qadd);
     }
     wrap.appendChild(row);
   }
@@ -815,8 +969,14 @@ function buildCourse(host, c){
         if(cpQueueAdd(c.file, i)){ qb.classList.add('ok'); qb.textContent = 'Queued \u2713';
           setTimeout(() => { qb.classList.remove('ok'); qb.textContent = '+ Queue'; }, 1100); }
       });
+      const pn = document.createElement('button'); pn.className = 'cp-queuebtn'; pn.type = 'button';
+      pn.textContent = 'Play next';
+      pn.addEventListener('click', () => {
+        if(cpQueueFront(c.file, i)){ pn.classList.add('ok'); pn.textContent = 'Next \u2713';
+          setTimeout(() => { pn.classList.remove('ok'); pn.textContent = 'Play next'; }, 1100); }
+      });
       const btnrow = document.createElement('div'); btnrow.className = 'cp-btnrow';
-      btnrow.append(pb, qb);
+      btnrow.append(pb, pn, qb);
       b.appendChild(btnrow);
       const row = document.createElement('div'); row.className = 'dl-row';
       const mk = (href, label, ext, fname) => {
