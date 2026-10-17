@@ -244,6 +244,32 @@ a.stat:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
 .cp-openbtn:active{transform:scale(.96)}
 .cp-openbtn svg{width:13px;height:13px}
 
+
+/* queue */
+.cp-btnrow{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.cp-btnrow .cp-openbtn{margin-top:0}
+.cp-queuebtn{display:inline-flex;align-items:center;padding:9px 14px;border-radius:11px;border:1px solid var(--card-br);background:var(--card);color:var(--mut);font-family:inherit;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s}
+.cp-queuebtn:hover{color:var(--txt);border-color:rgba(255,255,255,.25)}
+.cp-queuebtn.ok{color:#34d399;border-color:rgba(52,211,153,.45)}
+.cp-listtabs{display:flex;gap:6px;border-top:1px solid rgba(255,255,255,.07);padding-top:10px}
+.cp-listtab{flex:1;padding:7px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--mut);font-family:inherit;font-weight:700;font-size:.76rem;cursor:pointer;transition:all .15s}
+.cp-listtab.active{color:var(--txt);background:var(--card);border-color:var(--card-br)}
+.cp-chaps{border-top:none;padding-top:6px}
+.cp-chaprow{display:flex;align-items:center;gap:4px}
+.cp-chaprow .cp-chapitem{flex:1;min-width:0}
+.cp-qadd{flex-shrink:0;width:30px;height:30px;border-radius:9px;border:1px solid var(--card-br);background:transparent;color:var(--mut);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all .15s}
+.cp-qadd:hover{color:var(--txt);border-color:rgba(255,255,255,.25)}
+.cp-qadd.ok{color:#34d399;border-color:rgba(52,211,153,.45)}
+.cp-queue{display:none;flex-direction:column;max-height:210px;overflow-y:auto;padding-top:6px}
+.cp-qitem{display:flex;align-items:center;gap:4px}
+.cp-qmain{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:10px 8px;border:none;background:transparent;color:var(--txt);font-family:inherit;font-size:.85rem;cursor:pointer;border-radius:10px;text-align:left;transition:background .12s}
+.cp-qmain:hover{background:rgba(255,255,255,.05)}
+.cp-qmain .cp-cnum{background:rgba(255,255,255,.06);border-color:transparent;color:var(--mut)}
+.cp-qmain em{font-style:normal;font-size:.68rem;color:var(--mut);flex-shrink:0}
+.cp-qx{flex-shrink:0;width:30px;height:30px;border:none;border-radius:9px;background:transparent;color:var(--mut);font-size:1.05rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.cp-qx:hover{background:rgba(255,255,255,.08);color:var(--txt)}
+.cp-qempty{font-size:.78rem;color:var(--mut);padding:14px 8px;text-align:center}
+
 /* ---------- mini player ---------- */
 #mini{
   position:fixed;left:50%;transform:translate(-50%,140%);bottom:calc(14px + env(safe-area-inset-bottom));
@@ -346,7 +372,12 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
       <button id="cp-speed" aria-label="Playback speed">1x</button>
       <div class="cp-dl" id="cp-dl"></div>
     </div>
+    <div class="cp-listtabs">
+      <button class="cp-listtab active" id="cp-tab-chaps" type="button">Chapters</button>
+      <button class="cp-listtab" id="cp-tab-queue" type="button">Queue</button>
+    </div>
     <div class="cp-chaps" id="cp-chaps"></div>
+    <div class="cp-queue" id="cp-queue"></div>
   </div>
 </div>
 
@@ -414,6 +445,61 @@ if(cpSpeedIdx < 0) cpSpeedIdx = 1;
 let cpPos = {};
 try{ cpPos = JSON.parse(localStorage.getItem(CP_POS_KEY) || '{}') || {}; }catch(e){ cpPos = {}; }
 let cpChapter = null, cpTrackIdx = 0, cpSeeking = false, cpPendingSeek = 0, cpLastSave = 0;
+const CP_QUEUE_KEY = 'pcm-course-queue';
+let cpQueue = [];
+try{ cpQueue = JSON.parse(localStorage.getItem(CP_QUEUE_KEY) || '[]') || []; }catch(e){ cpQueue = []; }
+function cpSaveQueue(){ try{ localStorage.setItem(CP_QUEUE_KEY, JSON.stringify(cpQueue)); }catch(e){} }
+function cpQueueAdd(key, tIdx){
+  const t = COURSE[key] && COURSE[key][tIdx];
+  if(!t || !t.audio) return false;
+  cpQueue.push({key, track: tIdx});
+  cpSaveQueue(); cpRenderQueue();
+  return true;
+}
+function cpQueueRemove(i){ cpQueue.splice(i, 1); cpSaveQueue(); cpRenderQueue(); }
+function cpPlayNext(){
+  while(cpQueue.length){
+    const n = cpQueue.shift(); cpSaveQueue(); cpRenderQueue();
+    if(COURSE[n.key] && COURSE[n.key][n.track] && COURSE[n.key][n.track].audio){
+      openCoursePlayer(n.key, n.track);
+      return true;
+    }
+  }
+  return cpGo(1);
+}
+function cpRenderQueue(){
+  const wrap = document.getElementById('cp-queue'); if(!wrap) return;
+  document.getElementById('cp-tab-queue').textContent = 'Queue' + (cpQueue.length ? ' (' + cpQueue.length + ')' : '');
+  wrap.innerHTML = '';
+  if(!cpQueue.length){
+    const e = document.createElement('div'); e.className = 'cp-qempty'; e.textContent = 'Queue empty';
+    wrap.appendChild(e); return;
+  }
+  cpQueue.forEach((q, qi) => {
+    const info = cpChapterInfo(q.key);
+    const t = (COURSE[q.key] || [])[q.track];
+    const row = document.createElement('div'); row.className = 'cp-qitem';
+    const main = document.createElement('button'); main.className = 'cp-qmain'; main.type = 'button';
+    main.innerHTML = `<span class="cp-cnum">${qi + 1}</span><span class="cp-ct">${info.title}</span><em>${t ? t.name : ''}</em>`;
+    main.addEventListener('click', () => {
+      cpQueue.splice(qi, 1); cpSaveQueue(); cpRenderQueue();
+      openCoursePlayer(q.key, q.track);
+    });
+    const x = document.createElement('button'); x.className = 'cp-qx'; x.type = 'button';
+    x.setAttribute('aria-label', 'Remove from queue'); x.innerHTML = '&times;';
+    x.addEventListener('click', () => cpQueueRemove(qi));
+    row.append(main, x);
+    wrap.appendChild(row);
+  });
+}
+function cpShowList(which){
+  document.getElementById('cp-tab-chaps').classList.toggle('active', which === 'chaps');
+  document.getElementById('cp-tab-queue').classList.toggle('active', which === 'queue');
+  document.getElementById('cp-chaps').style.display = which === 'chaps' ? 'flex' : 'none';
+  document.getElementById('cp-queue').style.display = which === 'queue' ? 'flex' : 'none';
+}
+document.getElementById('cp-tab-chaps').addEventListener('click', () => cpShowList('chaps'));
+document.getElementById('cp-tab-queue').addEventListener('click', () => cpShowList('queue'));
 
 const cpEl = document.getElementById('cplayer');
 const cpSeek = document.getElementById('cp-seek');
@@ -464,7 +550,7 @@ function openCoursePlayer(key, tIdx, autoplay = true){
   }
   document.getElementById('cp-chapter').textContent = `Ch ${info.num} · ${info.title}`;
   document.getElementById('cp-track-label').textContent = `${t.name} track · full chapter`;
-  cpRenderTracks(); cpRenderDl(); cpRenderChaps();
+  cpRenderTracks(); cpRenderDl(); cpRenderChaps(); cpRenderQueue();
   cpEl.classList.add('show');
   if(!audio.paused) audio.pause();
   caudio.playbackRate = SPEEDS[cpSpeedIdx];
@@ -507,6 +593,7 @@ function cpRenderChaps(){
     const firstReady = tracks.findIndex(t => t.audio);
     let resume = '';
     for(const t of tracks){ const p = cpPos[key + '|' + t.name]; if(p && p > 30){ resume = t.name + ' ' + fmt(p); break; } }
+    const same = cpTrackIdx < tracks.length && tracks[cpTrackIdx].audio ? cpTrackIdx : firstReady;
     const b = document.createElement('button');
     b.className = 'cp-chapitem' + (key === cpChapter ? ' active' : '');
     b.style.setProperty('--sc', SUBJ_COLOR[info.subject] || '#38bdf8');
@@ -514,10 +601,20 @@ function cpRenderChaps(){
     b.innerHTML = `<span class="cp-cnum">${String(info.num).padStart(2,'0')}</span><span class="cp-ct">${info.title}</span><em>${resume || (firstReady < 0 ? 'soon' : '')}</em>`;
     if(firstReady >= 0) b.addEventListener('click', () => {
       if(key === cpChapter) return;
-      const same = cpTrackIdx < tracks.length && tracks[cpTrackIdx].audio ? cpTrackIdx : firstReady;
       openCoursePlayer(key, same);
     });
-    wrap.appendChild(b);
+    const row = document.createElement('div'); row.className = 'cp-chaprow';
+    row.appendChild(b);
+    if(firstReady >= 0){
+      const qadd = document.createElement('button'); qadd.className = 'cp-qadd'; qadd.type = 'button';
+      qadd.setAttribute('aria-label', 'Add to queue'); qadd.textContent = '+';
+      qadd.addEventListener('click', () => {
+        if(cpQueueAdd(key, same)){ qadd.classList.add('ok'); qadd.textContent = '\u2713';
+          setTimeout(() => { qadd.classList.remove('ok'); qadd.textContent = '+'; }, 1100); }
+      });
+      row.appendChild(qadd);
+    }
+    wrap.appendChild(row);
   }
 }
 function cpGo(dir){
@@ -545,7 +642,7 @@ function bindMedia(mode){
   const h = (n, f) => { try{ ms.setActionHandler(n, f); }catch(e){} };
   if(mode === 'course'){
     h('play', () => caudio.play()); h('pause', () => caudio.pause());
-    h('previoustrack', () => cpGo(-1)); h('nexttrack', () => cpGo(1));
+    h('previoustrack', () => cpGo(-1)); h('nexttrack', () => cpPlayNext());
     h('seekbackward', () => cpSkip(-15)); h('seekforward', () => cpSkip(30));
     h('seekto', d => { if(isFinite(caudio.duration)) caudio.currentTime = d.seekTime; });
   } else {
@@ -583,7 +680,7 @@ caudio.addEventListener('ended', () => {
   cpPos[cpPosKey()] = 0;
   try{ localStorage.setItem(CP_POS_KEY, JSON.stringify(cpPos)); }catch(e){}
   cpSyncUI();
-  cpGo(1); // autoplay next available track/chapter, silently; stops at end of list
+  cpPlayNext(); // queued items first, else next available track/chapter, silently; stops at end
 });
 
 cpSeek.addEventListener('input', () => {
@@ -612,6 +709,7 @@ document.getElementById('cp-close').addEventListener('click', () => {
   cpEl.classList.remove('show');
   render(); // refresh Resume labels on chapter cards
 });
+cpRenderQueue();
 document.addEventListener('keydown', e => {
   if(!cpEl.classList.contains('show')) return;
   if(e.target && e.target.tagName === 'INPUT' && e.target !== cpSeek) return;
@@ -689,7 +787,15 @@ function buildCourse(host, c){
       const pb = document.createElement('button'); pb.className = 'cp-openbtn'; pb.type = 'button';
       pb.innerHTML = SVG_PLAY + '<span>' + (pos > 30 ? 'Resume · ' + fmt(pos) : 'Play') + '</span>';
       pb.addEventListener('click', () => openCoursePlayer(c.file, i));
-      b.appendChild(pb);
+      const qb = document.createElement('button'); qb.className = 'cp-queuebtn'; qb.type = 'button';
+      qb.textContent = '+ Queue';
+      qb.addEventListener('click', () => {
+        if(cpQueueAdd(c.file, i)){ qb.classList.add('ok'); qb.textContent = 'Queued \u2713';
+          setTimeout(() => { qb.classList.remove('ok'); qb.textContent = '+ Queue'; }, 1100); }
+      });
+      const btnrow = document.createElement('div'); btnrow.className = 'cp-btnrow';
+      btnrow.append(pb, qb);
+      b.appendChild(btnrow);
       const row = document.createElement('div'); row.className = 'dl-row';
       const mk = (href, label, ext, fname) => {
         const l = document.createElement('a'); l.className = 'dl';
