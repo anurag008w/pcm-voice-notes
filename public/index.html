@@ -182,14 +182,6 @@ main{max-width:1080px;margin:0 auto;padding:8px 20px 0}
 #mini-close{flex-shrink:0;width:30px;height:30px;border:none;border-radius:9px;background:transparent;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #mini-close:hover{background:rgba(255,255,255,.08);color:var(--txt)}
 #mini-close svg{width:14px;height:14px}
-.mbtn{flex-shrink:0;width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.07);color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-.mbtn:hover{background:rgba(255,255,255,.14)}
-.mbtn:disabled{opacity:.35;cursor:default}
-.mbtn svg{width:15px;height:15px;fill:currentColor}
-#mini-auto{width:auto;border-radius:9px;padding:0 9px;font-size:.66rem;font-weight:700;letter-spacing:.03em;color:var(--mut);height:28px}
-#mini-auto.on{color:#0b1020;background:#7ee0a1}
-.chap.playing{scroll-margin-top:90px;scroll-margin-bottom:110px}
-@media(max-width:520px){#mini-time{display:none}#mini{gap:6px}}
 
 .empty{text-align:center;color:var(--mut);margin:60px 0;font-size:.95rem}
 footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;opacity:.7}
@@ -240,14 +232,11 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
 <main id="main"></main>
 
 <div id="mini" role="region" aria-label="Now playing">
-  <button class="mbtn" id="mini-prev" aria-label="Previous chapter"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
   <button class="pbtn" id="mini-play" aria-label="Play or pause"></button>
-  <button class="mbtn" id="mini-next" aria-label="Next chapter"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z"/></svg></button>
   <div class="mini-mid">
     <div id="mini-title"></div>
     <div class="bar" id="mini-bar"><div class="fill" id="mini-fill"></div></div>
   </div>
-  <button class="mbtn" id="mini-auto" aria-label="Autoplay next" title="Autoplay next chapter" aria-pressed="true">AUTO</button>
   <span id="mini-time">0:00 / 0:00</span>
   <button id="mini-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 </div>
@@ -278,7 +267,6 @@ const SUBJECTS = ['Physics','Chemistry','Maths'];
 if(curSubj !== 'all' && !SUBJECTS.includes(curSubj)) curSubj = 'all';
 let currentId = null;
 const CH = {};
-let autoNext = localStorage.getItem('pcm-auto') !== '0';
 const audio = new Audio();
 audio.preload = 'none';
 
@@ -376,7 +364,6 @@ function render(){
     main.appendChild(sec);
   }
   if(!main.children.length) main.innerHTML = '<p class="empty">Kuch nahi mila — spelling check karlo.</p>';
-  if(typeof updateNav==='function' && document.getElementById('mini-prev')) updateNav();
 }
 
 function togglePlay(c, id){
@@ -391,16 +378,13 @@ function togglePlay(c, id){
   miniTitle.textContent = `Ch ${c.num} · ${c.title}`;
   mini.classList.add('show');
   syncUI();
-  updateNav(); setMediaMeta(c);
-  const el = document.querySelector(`.chap[data-id="${CSS.escape(id)}"]`);
-  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  setMediaMeta(c);
 }
 
-// queue = chapters currently visible (respects class tab, subject chip, search), in page order
-function queue(){ return [...document.querySelectorAll('.chap')].map(e => e.dataset.id); }
+// invisible behaviour: queue = chapters currently visible (class tab, subject chip, search), in page order
 function step(dir){
-  const q = queue(), i = q.indexOf(currentId);
-  const j = i < 0 ? -1 : i + dir;
+  const q = [...document.querySelectorAll('.chap')].map(e => e.dataset.id);
+  const i = q.indexOf(currentId), j = i < 0 ? -1 : i + dir;
   return (j >= 0 && j < q.length) ? q[j] : null;
 }
 function go(dir){
@@ -408,16 +392,9 @@ function go(dir){
   if(id && CH[id]){ togglePlay(CH[id], id); return true; }
   return false;
 }
-function updateNav(){
-  document.getElementById('mini-prev').disabled = !step(-1);
-  document.getElementById('mini-next').disabled = !step(1);
-  const a = document.getElementById('mini-auto');
-  a.classList.toggle('on', autoNext); a.setAttribute('aria-pressed', autoNext);
-  a.textContent = autoNext ? 'AUTO ON' : 'AUTO OFF';
-}
 function setMediaMeta(c){
   if(!('mediaSession' in navigator)) return;
-  try{ navigator.mediaSession.metadata = new MediaMetadata({title:`Ch ${c.num} · ${c.title}`, artist:c.subject || c.subj || 'PCM Voice Notes', album:'PCM Voice Notes'}); }catch(e){}
+  try{ navigator.mediaSession.metadata = new MediaMetadata({title:`Ch ${c.num} · ${c.title}`, artist:'PCM Voice Notes', album:'PCM Voice Notes'}); }catch(e){}
 }
 if('mediaSession' in navigator){
   const ms = navigator.mediaSession;
@@ -425,8 +402,6 @@ if('mediaSession' in navigator){
   h('play', () => audio.play()); h('pause', () => audio.pause());
   h('previoustrack', () => go(-1)); h('nexttrack', () => go(1));
   h('seekto', d => { if(isFinite(audio.duration)) audio.currentTime = d.seekTime; });
-  h('seekbackward', d => { audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset||10)); });
-  h('seekforward', d => { audio.currentTime = Math.min(audio.duration||1e9, audio.currentTime + (d.seekOffset||10)); });
 }
 
 function seek(e, id){
@@ -467,15 +442,7 @@ audio.addEventListener('loadedmetadata', () => {
 });
 audio.addEventListener('play', syncUI);
 audio.addEventListener('pause', syncUI);
-audio.addEventListener('ended', () => {
-  syncUI();
-  if(autoNext) go(1);   // stops by itself at the end of the visible list
-});
-document.getElementById('mini-prev').addEventListener('click', () => go(-1));
-document.getElementById('mini-next').addEventListener('click', () => go(1));
-document.getElementById('mini-auto').addEventListener('click', () => {
-  autoNext = !autoNext; localStorage.setItem('pcm-auto', autoNext ? '1' : '0'); updateNav();
-});
+audio.addEventListener('ended', () => { syncUI(); go(1); });  // always-on autoplay next; stops at end of list
 
 miniPlay.addEventListener('click', () => { if(currentId) audio.paused ? audio.play() : audio.pause(); });
 miniBar.addEventListener('click', e => seek(e, currentId));
@@ -511,7 +478,6 @@ if(curCls !== '12'){
 }
 miniPlay.innerHTML = SVG_PLAY;
 render();
-updateNav();
 </script>
 </body>
 </html>
