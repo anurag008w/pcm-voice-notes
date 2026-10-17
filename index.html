@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <style>
 :root{
-  --bg:#0a0f1e; --bg2:#0e1526; --card:rgba(255,255,255,.04); --card-br:rgba(255,255,255,.08);
+  --bg:#0a0a0f; --bg2:#101018; --card:rgba(255,255,255,.05); --card-br:rgba(255,255,255,.09);
   --txt:#e8ecf4; --mut:#8b94a9; --acc:#38bdf8;
   --phy:#22d3ee; --che:#34d399; --mat:#a78bfa;
   --radius:16px;
@@ -88,9 +88,10 @@ main{max-width:1080px;margin:0 auto;padding:8px 20px 0}
 .chap.playing{border-color:var(--sc,#38bdf8);box-shadow:0 0 0 1px var(--sc,#38bdf8), 0 8px 28px rgba(0,0,0,.4)}
 .chap-top{display:flex;gap:12px;align-items:flex-start}
 .num{
-  flex-shrink:0;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-size:.85rem;color:var(--sc);background:color-mix(in srgb, var(--sc) 13%, transparent);
-  border:1px solid color-mix(in srgb, var(--sc) 30%, transparent);
+  flex-shrink:0;width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:1.05rem;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.45);
+  background:linear-gradient(135deg,var(--sc),color-mix(in srgb, var(--sc) 42%, #17171f));
+  box-shadow:0 4px 14px color-mix(in srgb, var(--sc) 28%, transparent);
 }
 .chap-meta{min-width:0}
 .chap-meta h3{font-size:.95rem;font-weight:600;line-height:1.35;letter-spacing:-.005em}
@@ -186,17 +187,32 @@ a.stat:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
 #cplayer{position:fixed;inset:0;z-index:80;display:none;background:rgba(5,9,18,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #cplayer.show{display:block;animation:fadein .18s ease}
 .cp-sheet{
-  position:absolute;left:50%;bottom:0;transform:translateX(-50%);
-  width:min(600px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;
-  background:linear-gradient(180deg,#121b32,#0b1220);
-  border:1px solid rgba(255,255,255,.12);border-bottom:none;border-radius:22px 22px 0 0;
-  padding:16px 18px calc(16px + env(safe-area-inset-bottom));
+  position:absolute;left:0;top:0;bottom:0;
+  width:100%;overflow-y:auto;
+  background:linear-gradient(180deg,#13131f,#0a0a10);
+  padding:calc(12px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;gap:14px;
-  box-shadow:0 -18px 60px rgba(0,0,0,.55);
 }
 @media(min-width:640px){
-  .cp-sheet{top:50%;bottom:auto;transform:translate(-50%,-50%);border-radius:22px;border-bottom:1px solid rgba(255,255,255,.12);max-height:min(88vh,780px)}
+  .cp-sheet{
+    left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);
+    width:min(600px,100%);max-height:min(92vh,820px);
+    border:1px solid rgba(255,255,255,.12);border-radius:22px;
+    padding:16px 18px;
+    box-shadow:0 -18px 60px rgba(0,0,0,.55);
+  }
 }
+#cplayer.show .cp-sheet{animation:cpslide .28s cubic-bezier(.2,.9,.3,1)}
+@keyframes cpslide{from{transform:translateY(64px);opacity:.35}to{transform:translateY(0);opacity:1}}
+@media(min-width:640px){
+  #cplayer.show .cp-sheet{animation:cpslide-d .28s cubic-bezier(.2,.9,.3,1)}
+  @keyframes cpslide-d{from{transform:translate(-50%,calc(-50% + 54px));opacity:.35}to{transform:translate(-50%,-50%);opacity:1}}
+}
+.cp-art{align-self:center;width:min(200px,52vw);aspect-ratio:1;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.6rem;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.5);
+  background:linear-gradient(135deg,var(--sc,#38bdf8),color-mix(in srgb, var(--sc,#38bdf8) 40%, #15151f));
+  box-shadow:0 16px 44px color-mix(in srgb, var(--sc,#38bdf8) 26%, transparent)}
 .cp-top{display:flex;align-items:flex-start;gap:10px}
 .cp-titles{flex:1;min-width:0}
 #cp-chapter{font-size:1.02rem;font-weight:700;line-height:1.3;letter-spacing:-.01em}
@@ -292,19 +308,26 @@ a.stat:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
 
 /* ---------- mini player ---------- */
 #mini{
-  position:fixed;left:50%;transform:translate(-50%,140%);bottom:calc(14px + env(safe-area-inset-bottom));
-  width:min(680px,calc(100% - 24px));z-index:50;
-  display:flex;align-items:center;gap:12px;padding:12px 14px;
-  background:rgba(16,23,42,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,.12);border-radius:18px;
-  box-shadow:0 12px 40px rgba(0,0,0,.55);
+  position:fixed;left:0;transform:translateY(140%);bottom:0;
+  width:100%;z-index:50;
+  display:flex;align-items:center;gap:11px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+  background:#12121c;
+  border-top:1px solid rgba(255,255,255,.09);
+  box-shadow:0 -8px 30px rgba(0,0,0,.5);
   transition:transform .3s cubic-bezier(.2,.9,.3,1.2);
 }
-#mini.show{transform:translate(-50%,0)}
-#mini .pbtn{width:44px;height:44px}
+#mini.show{transform:translateY(0)}
+.mini-art{flex-shrink:0;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:.88rem;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45);cursor:pointer;
+  background:linear-gradient(135deg,var(--sc,#38bdf8),color-mix(in srgb, var(--sc,#38bdf8) 42%, #17171f))}
+#mini-sub{font-size:.68rem;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+.mini-icobtn{flex-shrink:0;width:34px;height:34px;border:none;border-radius:50%;background:transparent;color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mini-icobtn:hover{background:rgba(255,255,255,.08)}
+.mini-icobtn svg{width:18px;height:18px}
+.mini-mid{cursor:pointer}
+#mini .pbtn{width:42px;height:42px}
 .mini-mid{flex:1;min-width:0}
 #mini-title{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
-#mini-time{font-size:.7rem;color:var(--mut);flex-shrink:0;font-variant-numeric:tabular-nums}
 #mini-close{flex-shrink:0;width:30px;height:30px;border:none;border-radius:9px;background:transparent;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #mini-close:hover{background:rgba(255,255,255,.08);color:var(--txt)}
 #mini-close svg{width:14px;height:14px}
@@ -359,13 +382,15 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
 <main id="main"></main>
 
 <div id="mini" role="region" aria-label="Now playing">
-  <button class="pbtn" id="mini-play" aria-label="Play or pause"></button>
+  <div class="mini-art" id="mini-art"></div>
   <div class="mini-mid">
     <div id="mini-title"></div>
+    <div id="mini-sub"></div>
     <div class="bar" id="mini-bar"><div class="fill" id="mini-fill"></div></div>
   </div>
-  <span id="mini-time">0:00 / 0:00</span>
-  <button id="mini-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <button class="pbtn" id="mini-play" aria-label="Play or pause"></button>
+  <button class="mini-icobtn" id="mini-next" aria-label="Next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13a1 1 0 0 0 1.54.84l9-6.5a1 1 0 0 0 0-1.68l-9-6.5A1 1 0 0 0 5 5.5z"/><rect x="16" y="5" width="2.6" height="14" rx="1.2"/></svg></button>
+  <button class="mini-icobtn" id="mini-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 </div>
 
 <!-- v2-course-player -->
@@ -376,8 +401,9 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
         <div id="cp-chapter"></div>
         <div id="cp-track-label"></div>
       </div>
-      <button id="cp-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button id="cp-close" aria-label="Collapse to mini player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
     </div>
+    <div class="cp-art" id="cp-art"></div>
     <div class="cp-tracks" id="cp-tracks"></div>
     <div class="cp-extras" id="cp-extras"></div>
     <div class="cp-seekwrap">
@@ -436,6 +462,9 @@ const miniTitle = document.getElementById('mini-title');
 const miniFill = document.getElementById('mini-fill');
 const miniTime = document.getElementById('mini-time');
 const miniBar = document.getElementById('mini-bar');
+const miniSub = document.getElementById('mini-sub');
+const miniArt = document.getElementById('mini-art');
+let miniMode = 'short';
 
 let curCls = localStorage.getItem('pcm-cls') || '12';
 let curSubj = localStorage.getItem('pcm-subj') || 'all';
@@ -652,6 +681,7 @@ function cpSeekFill(pct){
 }
 function cpSyncUI(){
   cpPlayBtn.innerHTML = (cpChapter && !caudio.paused) ? SVG_PAUSE : SVG_PLAY;
+  if(miniMode === 'course') syncUI();
 }
 function cpSkip(d){
   const t = caudio.currentTime + d;
@@ -676,8 +706,13 @@ function openCoursePlayer(key, tIdx, autoplay = true){
   }
   document.getElementById('cp-chapter').textContent = `Ch ${info.num} · ${info.title}`;
   document.getElementById('cp-track-label').textContent = `${t.name} track · full chapter`;
+  const cpArt = document.getElementById('cp-art');
+  cpArt.textContent = String(info.num).padStart(2,'0');
+  cpArt.style.setProperty('--sc', SUBJ_COLOR[info.subject] || '#38bdf8');
   cpRenderTracks(); cpRenderDl(); cpRenderChaps(); cpRenderQueue();
   cpEl.classList.add('show');
+  mini.classList.remove('show');
+  miniMode = 'course';
   if(!audio.paused) audio.pause();
   caudio.playbackRate = SPEEDS[cpSpeedIdx];
   cpSpeedBtn.textContent = SPEEDS[cpSpeedIdx] + 'x';
@@ -829,6 +864,9 @@ caudio.addEventListener('timeupdate', () => {
     cpSeekFill(pct);
     cpCur.textContent = fmt(caudio.currentTime);
   }
+  if(miniMode === 'course' && isFinite(caudio.duration) && caudio.duration > 0){
+    miniFill.style.width = ((caudio.currentTime / caudio.duration) * 100) + '%';
+  }
   const now = Date.now();
   if(now - cpLastSave > 5000){ cpLastSave = now; cpSavePos(); }
 });
@@ -867,10 +905,22 @@ cpSpeedBtn.addEventListener('click', () => {
 });
 document.getElementById('cp-close').addEventListener('click', () => {
   cpSavePos();
-  caudio.pause();
   cpEl.classList.remove('show');
+  miniMode = 'course';
+  updateMiniCourse();
+  mini.classList.add('show');
   render(); // refresh Resume labels on chapter cards
 });
+function updateMiniCourse(){
+  if(!cpChapter) return;
+  const info = cpChapterInfo(cpChapter);
+  const t = COURSE[cpChapter][cpTrackIdx];
+  miniTitle.textContent = `Ch ${info.num} · ${info.title}`;
+  miniSub.textContent = t.name + ' · full chapter';
+  miniArt.textContent = String(info.num).padStart(2,'0');
+  miniArt.style.setProperty('--sc', SUBJ_COLOR[info.subject] || '#38bdf8');
+  syncUI();
+}
 cpRenderQueue();
 // YouTube-style double-tap on empty player areas: left half -5s, right half +5s
 let cpLastTap = 0, cpLastTapX = 0;
@@ -1063,7 +1113,11 @@ function togglePlay(c, id){
   localStorage.setItem('pcm-last', id);
   audio.src = id;
   audio.play().catch(()=>{});
+  miniMode = 'short';
   miniTitle.textContent = `Ch ${c.num} · ${c.title}`;
+  miniSub.textContent = 'Voice note';
+  miniArt.textContent = String(c.num).padStart(2,'0');
+  miniArt.style.setProperty('--sc', SUBJ_COLOR[c.subject] || '#38bdf8');
   mini.classList.add('show');
   syncUI();
   setMediaMeta(c);
@@ -1093,7 +1147,7 @@ function seek(e, id){
 }
 
 function syncUI(){
-  const isPlaying = currentId && !audio.paused;
+  const isPlaying = miniMode === 'course' ? (cpChapter && !caudio.paused) : (currentId && !audio.paused);
   document.querySelectorAll('.chap').forEach(el => {
     const active = el.dataset.id === currentId;
     el.classList.toggle('playing', active);
@@ -1109,8 +1163,7 @@ function syncUI(){
 
 audio.addEventListener('timeupdate', () => {
   const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-  miniFill.style.width = pct + '%';
-  miniTime.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+  if(miniMode === 'short') miniFill.style.width = pct + '%';
   const el = document.querySelector(`.chap[data-id="${CSS.escape(currentId)}"]`);
   if(el){
     el.querySelector('.fill').style.width = pct + '%';
@@ -1127,12 +1180,28 @@ audio.addEventListener('play', () => { if(!caudio.paused) caudio.pause(); bindMe
 audio.addEventListener('pause', syncUI);
 audio.addEventListener('ended', () => { syncUI(); go(1); });  // always-on autoplay next; stops at end of list
 
-miniPlay.addEventListener('click', () => { if(currentId) audio.paused ? audio.play() : audio.pause(); });
-miniBar.addEventListener('click', e => seek(e, currentId));
+miniPlay.addEventListener('click', () => {
+  if(miniMode === 'course'){ if(cpChapter) caudio.paused ? caudio.play().catch(()=>{}) : caudio.pause(); }
+  else if(currentId) audio.paused ? audio.play() : audio.pause();
+});
+document.getElementById('mini-next').addEventListener('click', () => {
+  if(miniMode === 'course') cpPlayNext(); else go(1);
+});
+const cpExpand = () => { if(miniMode === 'course' && cpChapter) openCoursePlayer(cpChapter, cpTrackIdx, false); };
+document.querySelector('.mini-mid').addEventListener('click', cpExpand);
+miniArt.addEventListener('click', cpExpand);
+miniBar.addEventListener('click', e => {
+  if(miniMode === 'course'){
+    if(!isFinite(caudio.duration)) return;
+    const r = miniBar.getBoundingClientRect();
+    caudio.currentTime = ((e.clientX - r.left) / r.width) * caudio.duration;
+  } else seek(e, currentId);
+});
 document.getElementById('mini-close').addEventListener('click', () => {
-  audio.pause(); audio.removeAttribute('src'); audio.load();
-  currentId = null; mini.classList.remove('show'); syncUI();
-  miniFill.style.width = '0%'; miniTime.textContent = '0:00 / 0:00';
+  if(miniMode === 'course'){ cpSavePos(); caudio.pause(); }
+  else { audio.pause(); audio.removeAttribute('src'); audio.load(); currentId = null; }
+  mini.classList.remove('show'); syncUI();
+  miniFill.style.width = '0%';
 });
 
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
