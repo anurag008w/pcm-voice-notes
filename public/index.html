@@ -369,15 +369,15 @@ function buildCourse(host, c){
       a.addEventListener('play', () => { if(!audio.paused) audio.pause(); });
       b.appendChild(a);
       const row = document.createElement('div'); row.className = 'dl-row';
-      const mk = (file, label, ext) => {
+      const mk = (file, label, ext, fname) => {
         const l = document.createElement('a'); l.className = 'dl';
-        l.href = t.base + file; l.download = slug + '-' + t.name.toUpperCase() + '-' + label.toLowerCase().replace(/ /g,'-') + ext;
+        l.href = t.base + file; l.download = slug + '-' + t.name.toUpperCase() + '-' + (fname || label.toLowerCase().replace(/ /g,'-')) + ext;
         l.innerHTML = DL_SVG + '<span>' + label + '</span>';
         return l;
       };
-      row.appendChild(mk(t.audio, 'Audio', '.m4a'));
-      if(t.notes) row.appendChild(mk(t.notes, 'Notes PDF', '.pdf'));
-      if(t.formulas) row.appendChild(mk(t.formulas, 'Formula sheet', '.pdf'));
+      row.appendChild(mk(t.audio, 'Audio', '.m4a', 'audio'));
+      if(t.notes) row.appendChild(mk(t.notes, 'Notes PDF', '.pdf', 'notes'));
+      if(t.formulas) row.appendChild(mk(t.formulas, 'Formula sheet', '.pdf', 'formula-sheet'));
       b.appendChild(row);
     } else {
       const soon = document.createElement('div'); soon.className = 'track-soon';
