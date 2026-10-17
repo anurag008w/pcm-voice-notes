@@ -157,7 +157,6 @@ main{max-width:1080px;margin:0 auto;padding:8px 20px 0}
 .track-name span{font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb, var(--sc,#38bdf8) 85%, #fff)}
 .track-dur{font-style:normal;font-size:.68rem;color:var(--mut)}
 .track-soon{font-size:.72rem;color:var(--mut);padding:3px 0 1px}
-.course-audio{display:block;width:100%;height:38px;margin-top:8px;color-scheme:dark}
 .dl-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
 .dl{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;color:var(--mut);border:1px solid var(--card-br);padding:5px 11px;border-radius:8px;text-decoration:none;transition:all .15s;background:transparent}
 .dl:hover{color:var(--txt);border-color:rgba(255,255,255,.25)}
@@ -181,6 +180,69 @@ a.stat:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
   background:color-mix(in srgb, var(--cc,#38bdf8) 22%, transparent);
   border-color:color-mix(in srgb, var(--cc,#38bdf8) 55%, transparent);
 }
+
+
+/* ---------- full course player (overlay) ---------- */
+#cplayer{position:fixed;inset:0;z-index:80;display:none;background:rgba(5,9,18,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#cplayer.show{display:block;animation:fadein .18s ease}
+.cp-sheet{
+  position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:min(600px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;
+  background:linear-gradient(180deg,#121b32,#0b1220);
+  border:1px solid rgba(255,255,255,.12);border-bottom:none;border-radius:22px 22px 0 0;
+  padding:16px 18px calc(16px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:14px;
+  box-shadow:0 -18px 60px rgba(0,0,0,.55);
+}
+@media(min-width:640px){
+  .cp-sheet{top:50%;bottom:auto;transform:translate(-50%,-50%);border-radius:22px;border-bottom:1px solid rgba(255,255,255,.12);max-height:min(88vh,780px)}
+}
+.cp-top{display:flex;align-items:flex-start;gap:10px}
+.cp-titles{flex:1;min-width:0}
+#cp-chapter{font-size:1.02rem;font-weight:700;line-height:1.3;letter-spacing:-.01em}
+#cp-track-label{font-size:.74rem;color:var(--mut);margin-top:3px}
+#cp-close{flex-shrink:0;width:32px;height:32px;border:none;border-radius:10px;background:transparent;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#cp-close:hover{background:rgba(255,255,255,.08);color:var(--txt)}
+#cp-close svg{width:16px;height:16px}
+.cp-tracks{display:flex;gap:8px}
+.cp-tchip{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 6px;border-radius:11px;border:1px solid var(--card-br);background:var(--card);color:var(--mut);font-family:inherit;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .15s}
+.cp-tchip em{font-style:normal;font-weight:600;font-size:.66rem;opacity:.75}
+.cp-tchip:not(:disabled):hover{color:var(--txt);border-color:rgba(255,255,255,.22)}
+.cp-tchip.active{color:#fff;background:linear-gradient(135deg,#38bdf8,#6366f1);border-color:transparent;box-shadow:0 3px 14px rgba(56,189,248,.3)}
+.cp-tchip:disabled{opacity:.38;cursor:default}
+.cp-seekwrap{display:flex;flex-direction:column;gap:2px}
+#cp-seek{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;cursor:pointer;margin:0}
+#cp-seek::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:var(--cp-track,rgba(255,255,255,.12))}
+#cp-seek::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;margin-top:-5.5px;box-shadow:0 1px 6px rgba(0,0,0,.55)}
+#cp-seek::-moz-range-track{height:6px;border-radius:99px;background:rgba(255,255,255,.12)}
+#cp-seek::-moz-range-progress{height:6px;border-radius:99px;background:#38bdf8}
+#cp-seek::-moz-range-thumb{width:17px;height:17px;border:none;border-radius:50%;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.55)}
+.cp-times{display:flex;justify-content:space-between;font-size:.72rem;color:var(--mut);font-variant-numeric:tabular-nums}
+.cp-controls{display:flex;align-items:center;justify-content:center;gap:30px;margin-top:2px}
+.cp-skip{width:54px;height:54px;border-radius:50%;border:1px solid var(--card-br);background:var(--card);color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cp-skip:hover{border-color:rgba(255,255,255,.25)}
+.cp-skip:active{transform:scale(.93)}
+.cp-skip svg{width:26px;height:26px}
+.cp-playbtn{width:70px;height:70px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,#38bdf8,#6366f1);color:#060a14;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(56,189,248,.42);transition:transform .12s}
+.cp-playbtn:hover{transform:scale(1.05)}
+.cp-playbtn:active{transform:scale(.95)}
+.cp-playbtn svg{width:27px;height:27px}
+.cp-row2{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+#cp-speed{min-width:60px;padding:8px 12px;border-radius:10px;border:1px solid var(--card-br);background:var(--card);color:var(--txt);font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s}
+#cp-speed:hover{border-color:rgba(255,255,255,.25)}
+.cp-dl{display:flex;gap:7px;flex-wrap:wrap}
+.cp-chaps{display:flex;flex-direction:column;border-top:1px solid rgba(255,255,255,.07);padding-top:6px;max-height:210px;overflow-y:auto}
+.cp-chapitem{display:flex;align-items:center;gap:10px;padding:10px 8px;border:none;background:transparent;color:var(--txt);font-family:inherit;font-size:.85rem;cursor:pointer;border-radius:10px;text-align:left;transition:background .12s}
+.cp-chapitem:not(:disabled):hover{background:rgba(255,255,255,.05)}
+.cp-chapitem.active{background:color-mix(in srgb, var(--sc,#38bdf8) 15%, transparent)}
+.cp-chapitem:disabled{opacity:.45;cursor:default}
+.cp-cnum{flex-shrink:0;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:var(--sc,#38bdf8);background:color-mix(in srgb, var(--sc,#38bdf8) 13%, transparent);border:1px solid color-mix(in srgb, var(--sc,#38bdf8) 28%, transparent)}
+.cp-ct{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.cp-chapitem em{font-style:normal;font-size:.68rem;color:var(--mut);flex-shrink:0;font-variant-numeric:tabular-nums}
+.cp-openbtn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:9px 16px;border-radius:11px;border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:.8rem;color:#060a14;background:linear-gradient(135deg,var(--sc,#38bdf8),color-mix(in srgb, var(--sc,#38bdf8) 60%, #6366f1));box-shadow:0 3px 12px color-mix(in srgb, var(--sc,#38bdf8) 30%, transparent);transition:transform .12s}
+.cp-openbtn:hover{transform:scale(1.04)}
+.cp-openbtn:active{transform:scale(.96)}
+.cp-openbtn svg{width:13px;height:13px}
 
 /* ---------- mini player ---------- */
 #mini{
@@ -260,6 +322,34 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin:44px 0 10px;op
   <button id="mini-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 </div>
 
+<!-- v2-course-player -->
+<div id="cplayer" role="dialog" aria-label="Course player" aria-modal="true">
+  <div class="cp-sheet">
+    <div class="cp-top">
+      <div class="cp-titles">
+        <div id="cp-chapter"></div>
+        <div id="cp-track-label"></div>
+      </div>
+      <button id="cp-close" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="cp-tracks" id="cp-tracks"></div>
+    <div class="cp-seekwrap">
+      <input type="range" id="cp-seek" min="0" max="1000" step="1" value="0" aria-label="Seek">
+      <div class="cp-times"><span id="cp-cur">0:00</span><span id="cp-dur">--:--</span></div>
+    </div>
+    <div class="cp-controls">
+      <button class="cp-skip" id="cp-back" aria-label="Back 15 seconds"></button>
+      <button class="cp-playbtn" id="cp-play" aria-label="Play or pause"></button>
+      <button class="cp-skip" id="cp-fwd" aria-label="Forward 30 seconds"></button>
+    </div>
+    <div class="cp-row2">
+      <button id="cp-speed" aria-label="Playback speed">1x</button>
+      <div class="cp-dl" id="cp-dl"></div>
+    </div>
+    <div class="cp-chaps" id="cp-chaps"></div>
+  </div>
+</div>
+
 <footer>Made for Anurag · saare voice notes + formulas ek jagah</footer>
 
 <script src="vendor/katex/katex.min.js"></script>
@@ -269,7 +359,7 @@ const ROWS = {"audio/C11-01-Some-Basic-Concepts.mp4":[{"seg":[{"t":"m","s":"1\\;
 // Full-course tracks per chapter (keyed by chapter audio file). Track with no `audio` shows as "coming soon".
 const COURSE = {
   "audio/P12-01-Rotational-Dynamics.mp4": [
-    {name:"Board",   base:"course/P12-01-Rotational-Dynamics/board/",   audio:"audio.mp4", notes:"notes.pdf", formulas:"formula-sheet.pdf", dur:"32 min"},
+    {name:"Board",   base:"course/P12-01-Rotational-Dynamics/board/",   audio:"audio.mp4", notes:"notes.pdf", formulas:"formula-sheet.pdf", dur:"80 min"},
     {name:"JEE",     base:"course/P12-01-Rotational-Dynamics/jee/"},
     {name:"MHT-CET", base:"course/P12-01-Rotational-Dynamics/mht-cet/"}
   ]
@@ -300,6 +390,236 @@ const audio = new Audio();
 audio.preload = 'none';
 
 const fmt = s => { if(!isFinite(s)) return '--:--'; s = Math.floor(s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+
+
+/* ================= full-course player ================= */
+// Course audio hosting switch: leave "" while media is served from this repo.
+// If audio moves off-repo (e.g. Cloudflare R2 / B2), set the base URL here, e.g.
+//   const COURSE_MEDIA_BASE = "https://pub-xxxxxxxx.r2.dev/";
+// -> audio is then loaded from <base>course/<chapter-id>/<track>/audio.mp4
+// An absolute https URL in a track's `audio` field always wins over the base.
+// notes.pdf / formula-sheet.pdf stay same-origin (small files, kept in repo).
+const COURSE_MEDIA_BASE = "";
+const cmedia = (base, file) => /^https?:\/\//.test(file) ? file : COURSE_MEDIA_BASE + base + file;
+
+const SVG_BACK15 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.3"/><path d="M3 4v5h5"/><text x="12.5" y="15.5" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">15</text></svg>';
+const SVG_FWD30  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 4v5h-5"/><text x="11.5" y="15.5" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">30</text></svg>';
+
+const caudio = new Audio();
+caudio.preload = 'metadata';
+const CP_POS_KEY = 'pcm-course-pos', CP_LAST_KEY = 'pcm-course-last', CP_SPEED_KEY = 'pcm-course-speed';
+const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
+let cpSpeedIdx = SPEEDS.indexOf(parseFloat(localStorage.getItem(CP_SPEED_KEY)));
+if(cpSpeedIdx < 0) cpSpeedIdx = 1;
+let cpPos = {};
+try{ cpPos = JSON.parse(localStorage.getItem(CP_POS_KEY) || '{}') || {}; }catch(e){ cpPos = {}; }
+let cpChapter = null, cpTrackIdx = 0, cpSeeking = false, cpPendingSeek = 0, cpLastSave = 0;
+
+const cpEl = document.getElementById('cplayer');
+const cpSeek = document.getElementById('cp-seek');
+const cpCur = document.getElementById('cp-cur');
+const cpDur = document.getElementById('cp-dur');
+const cpPlayBtn = document.getElementById('cp-play');
+const cpSpeedBtn = document.getElementById('cp-speed');
+document.getElementById('cp-back').innerHTML = SVG_BACK15;
+document.getElementById('cp-fwd').innerHTML = SVG_FWD30;
+
+const cpTrackName = () => COURSE[cpChapter][cpTrackIdx].name;
+const cpPosKey = () => cpChapter + '|' + cpTrackName();
+function cpChapterInfo(key){
+  const c = DATA.find(x => x.file === key);
+  return c || {num:0, title:key, subject:'Physics'};
+}
+function cpSavePos(){
+  if(!cpChapter) return;
+  cpPos[cpPosKey()] = Math.floor(caudio.currentTime || 0);
+  try{ localStorage.setItem(CP_POS_KEY, JSON.stringify(cpPos)); }catch(e){}
+}
+function cpSeekFill(pct){
+  cpSeek.style.setProperty('--cp-track', `linear-gradient(90deg, #38bdf8 ${pct}%, rgba(255,255,255,.12) ${pct}%)`);
+}
+function cpSyncUI(){
+  cpPlayBtn.innerHTML = (cpChapter && !caudio.paused) ? SVG_PAUSE : SVG_PLAY;
+}
+function cpSkip(d){
+  const t = caudio.currentTime + d;
+  caudio.currentTime = Math.max(0, isFinite(caudio.duration) ? Math.min(caudio.duration, t) : Math.max(0, t));
+  cpSavePos();
+}
+function openCoursePlayer(key, tIdx, autoplay = true){
+  const tracks = COURSE[key];
+  if(!tracks || !tracks[tIdx] || !tracks[tIdx].audio) return;
+  cpSavePos(); // store outgoing track position before switching
+  cpChapter = key; cpTrackIdx = tIdx;
+  const t = tracks[tIdx];
+  const info = cpChapterInfo(key);
+  const src = cmedia(t.base, t.audio);
+  if(caudio.dataset.src !== src){
+    caudio.dataset.src = src;
+    caudio.src = src;
+    cpPendingSeek = cpPos[cpPosKey()] || 0;
+    cpCur.textContent = fmt(cpPendingSeek);
+    cpDur.textContent = t.dur || '--:--';
+    cpSeek.value = 0; cpSeekFill(0);
+  }
+  document.getElementById('cp-chapter').textContent = `Ch ${info.num} · ${info.title}`;
+  document.getElementById('cp-track-label').textContent = `${t.name} track · full chapter`;
+  cpRenderTracks(); cpRenderDl(); cpRenderChaps();
+  cpEl.classList.add('show');
+  if(!audio.paused) audio.pause();
+  caudio.playbackRate = SPEEDS[cpSpeedIdx];
+  cpSpeedBtn.textContent = SPEEDS[cpSpeedIdx] + 'x';
+  if(autoplay) caudio.play().catch(()=>{});
+  try{ localStorage.setItem(CP_LAST_KEY, JSON.stringify([key, tIdx])); }catch(e){}
+  cpSyncUI(); setCourseMediaMeta(); bindMedia('course');
+}
+function cpRenderTracks(){
+  const wrap = document.getElementById('cp-tracks'); wrap.innerHTML = '';
+  COURSE[cpChapter].forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'cp-tchip' + (i === cpTrackIdx ? ' active' : '');
+    b.disabled = !t.audio;
+    b.innerHTML = t.name + (t.audio ? (t.dur ? `<em>${t.dur}</em>` : '') : '<em>coming soon</em>');
+    if(t.audio) b.addEventListener('click', () => { if(i !== cpTrackIdx) openCoursePlayer(cpChapter, i); });
+    wrap.appendChild(b);
+  });
+}
+function cpRenderDl(){
+  const wrap = document.getElementById('cp-dl'); wrap.innerHTML = '';
+  const t = COURSE[cpChapter][cpTrackIdx];
+  const slug = cpChapter.split('/').pop().replace(/\.[^.]+$/, '');
+  const mk = (file, label, ext, fname, abs) => {
+    const l = document.createElement('a'); l.className = 'dl';
+    l.href = abs ? file : t.base + file;
+    l.download = slug + '-' + t.name.toUpperCase() + '-' + (fname || label.toLowerCase().replace(/ /g,'-')) + ext;
+    l.innerHTML = DL_SVG + '<span>' + label + '</span>';
+    return l;
+  };
+  wrap.appendChild(mk(cmedia(t.base, t.audio), 'Audio', '.m4a', 'audio', true));
+  if(t.notes) wrap.appendChild(mk(t.notes, 'Notes PDF', '.pdf', 'notes'));
+  if(t.formulas) wrap.appendChild(mk(t.formulas, 'Formula sheet', '.pdf', 'formula-sheet'));
+}
+function cpRenderChaps(){
+  const wrap = document.getElementById('cp-chaps'); wrap.innerHTML = '';
+  for(const key of Object.keys(COURSE)){
+    const info = cpChapterInfo(key);
+    const tracks = COURSE[key];
+    const firstReady = tracks.findIndex(t => t.audio);
+    let resume = '';
+    for(const t of tracks){ const p = cpPos[key + '|' + t.name]; if(p && p > 30){ resume = t.name + ' ' + fmt(p); break; } }
+    const b = document.createElement('button');
+    b.className = 'cp-chapitem' + (key === cpChapter ? ' active' : '');
+    b.style.setProperty('--sc', SUBJ_COLOR[info.subject] || '#38bdf8');
+    b.disabled = firstReady < 0;
+    b.innerHTML = `<span class="cp-cnum">${String(info.num).padStart(2,'0')}</span><span class="cp-ct">${info.title}</span><em>${resume || (firstReady < 0 ? 'soon' : '')}</em>`;
+    if(firstReady >= 0) b.addEventListener('click', () => {
+      if(key === cpChapter) return;
+      const same = cpTrackIdx < tracks.length && tracks[cpTrackIdx].audio ? cpTrackIdx : firstReady;
+      openCoursePlayer(key, same);
+    });
+    wrap.appendChild(b);
+  }
+}
+function cpGo(dir){
+  const keys = Object.keys(COURSE);
+  let ki = keys.indexOf(cpChapter), ti = cpTrackIdx + dir;
+  while(ki >= 0 && ki < keys.length){
+    const tracks = COURSE[keys[ki]];
+    while(ti >= 0 && ti < tracks.length){
+      if(tracks[ti].audio){ openCoursePlayer(keys[ki], ti); return true; }
+      ti += dir;
+    }
+    ki += dir;
+    ti = dir > 0 ? 0 : (ki >= 0 && ki < keys.length ? COURSE[keys[ki]].length - 1 : 0);
+  }
+  return false;
+}
+function setCourseMediaMeta(){
+  if(!('mediaSession' in navigator)) return;
+  const info = cpChapterInfo(cpChapter);
+  try{ navigator.mediaSession.metadata = new MediaMetadata({title:`Ch ${info.num} · ${info.title}`, artist:'Divya · ' + cpTrackName(), album:'PCM Voice Notes'}); }catch(e){}
+}
+function bindMedia(mode){
+  if(!('mediaSession' in navigator)) return;
+  const ms = navigator.mediaSession;
+  const h = (n, f) => { try{ ms.setActionHandler(n, f); }catch(e){} };
+  if(mode === 'course'){
+    h('play', () => caudio.play()); h('pause', () => caudio.pause());
+    h('previoustrack', () => cpGo(-1)); h('nexttrack', () => cpGo(1));
+    h('seekbackward', () => cpSkip(-15)); h('seekforward', () => cpSkip(30));
+    h('seekto', d => { if(isFinite(caudio.duration)) caudio.currentTime = d.seekTime; });
+  } else {
+    h('play', () => audio.play()); h('pause', () => audio.pause());
+    h('previoustrack', () => go(-1)); h('nexttrack', () => go(1));
+    h('seekbackward', null); h('seekforward', null);
+    h('seekto', d => { if(isFinite(audio.duration)) audio.currentTime = d.seekTime; });
+  }
+}
+
+caudio.addEventListener('loadedmetadata', () => {
+  cpDur.textContent = fmt(caudio.duration);
+  if(cpPendingSeek > 0 && cpPendingSeek < caudio.duration - 3){
+    caudio.currentTime = cpPendingSeek;
+  }
+  cpPendingSeek = 0;
+});
+caudio.addEventListener('timeupdate', () => {
+  if(!cpSeeking && isFinite(caudio.duration) && caudio.duration > 0){
+    const pct = (caudio.currentTime / caudio.duration) * 100;
+    cpSeek.value = Math.round(pct * 10);
+    cpSeekFill(pct);
+    cpCur.textContent = fmt(caudio.currentTime);
+  }
+  const now = Date.now();
+  if(now - cpLastSave > 5000){ cpLastSave = now; cpSavePos(); }
+});
+caudio.addEventListener('play', () => {
+  if(!audio.paused) audio.pause();
+  caudio.playbackRate = SPEEDS[cpSpeedIdx];
+  cpSyncUI(); setCourseMediaMeta(); bindMedia('course');
+});
+caudio.addEventListener('pause', () => { cpSyncUI(); cpSavePos(); });
+caudio.addEventListener('ended', () => {
+  cpPos[cpPosKey()] = 0;
+  try{ localStorage.setItem(CP_POS_KEY, JSON.stringify(cpPos)); }catch(e){}
+  cpSyncUI();
+  cpGo(1); // autoplay next available track/chapter, silently; stops at end of list
+});
+
+cpSeek.addEventListener('input', () => {
+  cpSeeking = true;
+  const pct = cpSeek.value / 10;
+  cpSeekFill(pct);
+  if(isFinite(caudio.duration)) cpCur.textContent = fmt(caudio.duration * cpSeek.value / 1000);
+});
+cpSeek.addEventListener('change', () => {
+  if(isFinite(caudio.duration)) caudio.currentTime = caudio.duration * cpSeek.value / 1000;
+  cpSeeking = false;
+  cpSavePos();
+});
+cpPlayBtn.addEventListener('click', () => { if(cpChapter) caudio.paused ? caudio.play().catch(()=>{}) : caudio.pause(); });
+document.getElementById('cp-back').addEventListener('click', () => cpSkip(-15));
+document.getElementById('cp-fwd').addEventListener('click', () => cpSkip(30));
+cpSpeedBtn.addEventListener('click', () => {
+  cpSpeedIdx = (cpSpeedIdx + 1) % SPEEDS.length;
+  caudio.playbackRate = SPEEDS[cpSpeedIdx];
+  cpSpeedBtn.textContent = SPEEDS[cpSpeedIdx] + 'x';
+  try{ localStorage.setItem(CP_SPEED_KEY, String(SPEEDS[cpSpeedIdx])); }catch(e){}
+});
+document.getElementById('cp-close').addEventListener('click', () => {
+  cpSavePos();
+  caudio.pause();
+  cpEl.classList.remove('show');
+  render(); // refresh Resume labels on chapter cards
+});
+document.addEventListener('keydown', e => {
+  if(!cpEl.classList.contains('show')) return;
+  if(e.target && e.target.tagName === 'INPUT' && e.target !== cpSeek) return;
+  if(e.key === 'ArrowLeft'){ cpSkip(-15); e.preventDefault(); }
+  else if(e.key === 'ArrowRight'){ cpSkip(30); e.preventDefault(); }
+  else if(e.key === ' '){ e.preventDefault(); if(cpChapter) caudio.paused ? caudio.play().catch(()=>{}) : caudio.pause(); }
+  else if(e.key === 'Escape'){ document.getElementById('cp-close').click(); }
+});
 
 function buildFormulas(host, c){
   const panel = document.createElement('div'); panel.className = 'fx-panel';
@@ -355,29 +675,31 @@ function buildCourse(host, c){
   const slug = c.file.split('/').pop().replace(/\.[^.]+$/, '');
   const panel = document.createElement('div'); panel.className = 'fx-panel';
   const head = document.createElement('div'); head.className = 'fx-head';
-  const title = document.createElement('span'); title.textContent = 'Full course · 30+ min deep notes';
+  const title = document.createElement('span'); title.textContent = 'Full course · deep chapter audio';
   head.appendChild(title); panel.appendChild(head);
-  for(const t of tracks){
+  tracks.forEach((t, i) => {
     const b = document.createElement('div'); b.className = 'track-block';
     const nm = document.createElement('div'); nm.className = 'track-name';
     const s = document.createElement('span'); s.textContent = t.name;
-    nm.appendChild(s); b.appendChild(nm);
+    nm.appendChild(s);
+    if(t.audio && t.dur){ const d = document.createElement('em'); d.className = 'track-dur'; d.textContent = t.dur; nm.appendChild(d); }
+    b.appendChild(nm);
     if(t.audio){
-      if(t.dur){ const d = document.createElement('em'); d.className = 'track-dur'; d.textContent = t.dur; nm.appendChild(d); }
-      const a = document.createElement('audio');
-      a.className = 'course-audio'; a.controls = true; a.preload = 'metadata'; a.src = t.base + t.audio;
-      a.addEventListener('play', () => { if(!audio.paused) audio.pause(); });
-      b.appendChild(a);
+      const pos = cpPos[c.file + '|' + t.name] || 0;
+      const pb = document.createElement('button'); pb.className = 'cp-openbtn'; pb.type = 'button';
+      pb.innerHTML = SVG_PLAY + '<span>' + (pos > 30 ? 'Resume · ' + fmt(pos) : 'Play') + '</span>';
+      pb.addEventListener('click', () => openCoursePlayer(c.file, i));
+      b.appendChild(pb);
       const row = document.createElement('div'); row.className = 'dl-row';
-      const mk = (file, label, ext, fname) => {
+      const mk = (href, label, ext, fname) => {
         const l = document.createElement('a'); l.className = 'dl';
-        l.href = t.base + file; l.download = slug + '-' + t.name.toUpperCase() + '-' + (fname || label.toLowerCase().replace(/ /g,'-')) + ext;
+        l.href = href; l.download = slug + '-' + t.name.toUpperCase() + '-' + (fname || label.toLowerCase().replace(/ /g,'-')) + ext;
         l.innerHTML = DL_SVG + '<span>' + label + '</span>';
         return l;
       };
-      row.appendChild(mk(t.audio, 'Audio', '.m4a', 'audio'));
-      if(t.notes) row.appendChild(mk(t.notes, 'Notes PDF', '.pdf', 'notes'));
-      if(t.formulas) row.appendChild(mk(t.formulas, 'Formula sheet', '.pdf', 'formula-sheet'));
+      row.appendChild(mk(cmedia(t.base, t.audio), 'Audio', '.m4a', 'audio'));
+      if(t.notes) row.appendChild(mk(t.base + t.notes, 'Notes PDF', '.pdf', 'notes'));
+      if(t.formulas) row.appendChild(mk(t.base + t.formulas, 'Formula sheet', '.pdf', 'formula-sheet'));
       b.appendChild(row);
     } else {
       const soon = document.createElement('div'); soon.className = 'track-soon';
@@ -385,7 +707,7 @@ function buildCourse(host, c){
       b.appendChild(soon);
     }
     panel.appendChild(b);
-  }
+  });
   host.appendChild(panel);
 }
 
@@ -474,13 +796,7 @@ function setMediaMeta(c){
   if(!('mediaSession' in navigator)) return;
   try{ navigator.mediaSession.metadata = new MediaMetadata({title:`Ch ${c.num} · ${c.title}`, artist:'PCM Voice Notes', album:'PCM Voice Notes'}); }catch(e){}
 }
-if('mediaSession' in navigator){
-  const ms = navigator.mediaSession;
-  const h = (n, f) => { try{ ms.setActionHandler(n, f); }catch(e){} };
-  h('play', () => audio.play()); h('pause', () => audio.pause());
-  h('previoustrack', () => go(-1)); h('nexttrack', () => go(1));
-  h('seekto', d => { if(isFinite(audio.duration)) audio.currentTime = d.seekTime; });
-}
+bindMedia('mini');
 
 function seek(e, id){
   if(id !== currentId || !isFinite(audio.duration)) return;
@@ -519,7 +835,7 @@ audio.addEventListener('loadedmetadata', () => {
   if(el) el.querySelector('.dur').textContent = fmt(audio.duration);
 });
 audio.addEventListener('play', syncUI);
-audio.addEventListener('play', () => document.querySelectorAll('.course-audio').forEach(a => { if(!a.paused) a.pause(); }));
+audio.addEventListener('play', () => { if(!caudio.paused) caudio.pause(); bindMedia('mini'); });
 audio.addEventListener('pause', syncUI);
 audio.addEventListener('ended', () => { syncUI(); go(1); });  // always-on autoplay next; stops at end of list
 
