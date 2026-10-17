@@ -365,7 +365,7 @@ function buildCourse(host, c){
     if(t.audio){
       if(t.dur){ const d = document.createElement('em'); d.className = 'track-dur'; d.textContent = t.dur; nm.appendChild(d); }
       const a = document.createElement('audio');
-      a.className = 'course-audio'; a.controls = true; a.preload = 'none'; a.src = t.base + t.audio;
+      a.className = 'course-audio'; a.controls = true; a.preload = 'metadata'; a.src = t.base + t.audio;
       a.addEventListener('play', () => { if(!audio.paused) audio.pause(); });
       b.appendChild(a);
       const row = document.createElement('div'); row.className = 'dl-row';
