@@ -397,6 +397,11 @@ const COURSE = {
     {name:"JEE",     base:"course/P12-01-Rotational-Dynamics/jee/"},
     {name:"MHT-CET", base:"course/P12-01-Rotational-Dynamics/mht-cet/"}
   ]
+  "audio/P12-02-Mechanical-Properties-of-Fluids.mp4": [
+    {name:"Board",   base:"course/P12-02-Mechanical-Properties-of-Fluids/board/",   audio:"https://pcm-media.anuragwankhede65.workers.dev/media/11ICDGpeMyaJV1B3W8G7FB8kr8ZX4XE-I", notes:"https://pcm-media.anuragwankhede65.workers.dev/media/1RDlbn27zYcCFVGTzeyhcdZgZWixYNEE1", formulas:"https://pcm-media.anuragwankhede65.workers.dev/media/1m3__XskvSzQBzeoxymcPEBJDdnN4yFx2", dur:"81 min"},
+    {name:"JEE",     base:"course/P12-02-Mechanical-Properties-of-Fluids/jee/"},
+    {name:"MHT-CET", base:"course/P12-02-Mechanical-Properties-of-Fluids/mht-cet/"}
+  ]
 };
 const DL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4-4m-4 4-4-4"/><path d="M4 19h16"/></svg>';
 
@@ -585,8 +590,8 @@ function cpRenderDl(){
     return l;
   };
   wrap.appendChild(mk(cmedia(t.base, t.audio), 'Audio', '.m4a', 'audio', true));
-  if(t.notes) wrap.appendChild(mk(t.notes, 'Notes PDF', '.pdf', 'notes'));
-  if(t.formulas) wrap.appendChild(mk(t.formulas, 'Formula sheet', '.pdf', 'formula-sheet'));
+  if(t.notes) wrap.appendChild(mk(cmedia(t.base, t.notes), 'Notes PDF', '.pdf', 'notes'));
+  if(t.formulas) wrap.appendChild(mk(cmedia(t.base, t.formulas), 'Formula sheet', '.pdf', 'formula-sheet'));
 }
 function cpRenderChaps(){
   const wrap = document.getElementById('cp-chaps'); wrap.innerHTML = '';
@@ -821,8 +826,8 @@ function buildCourse(host, c){
         return l;
       };
       row.appendChild(mk(cmedia(t.base, t.audio), 'Audio', '.m4a', 'audio'));
-      if(t.notes) row.appendChild(mk(t.base + t.notes, 'Notes PDF', '.pdf', 'notes'));
-      if(t.formulas) row.appendChild(mk(t.base + t.formulas, 'Formula sheet', '.pdf', 'formula-sheet'));
+      if(t.notes) row.appendChild(mk(cmedia(t.base, t.notes), 'Notes PDF', '.pdf', 'notes'));
+      if(t.formulas) row.appendChild(mk(cmedia(t.base, t.formulas), 'Formula sheet', '.pdf', 'formula-sheet'));
       b.appendChild(row);
     } else {
       const soon = document.createElement('div'); soon.className = 'track-soon';
