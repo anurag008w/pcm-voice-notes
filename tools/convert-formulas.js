@@ -11,6 +11,7 @@ const SYM = {'−':'-','×':'\\times ','·':'\\cdot ','°':'^{\\circ} ','±':'\\
 const FUNCS = new Set(['sin','cos','tan','sec','cosec','csc','cot','sinh','cosh','tanh','ln','log','lim','min','max','det','arg','exp','mod','gcd','sup','inf','deg']);
 const MATHY_SUB = new Set(['i','j','n','r','x','y','0','1','2','3','4','5','6','7','8','9','a','b','e','o','v','p','+','-','\\beta']);
 
+const SUBTOKENS = {Iz:'I_z',Ix:'I_x',Iy:'I_y',Ic:'I_c',XL:'X_L',XC:'X_C',Ax:'A_x',Ay:'A_y',Az:'A_z',En:'E_n',rn:'r_n',vn:'v_n',fn:'f_n',Rt:'R_t',BH:'B_H',BV:'B_V',Am:'A_m',Ac:'A_c',Rf:'R_f',Vs:'V_s',Vp:'V_p',Ns:'N_s',Np:'N_p',Ip:'I_p',Is:'I_s',KEmax:'\\text{KE}_{\\text{max}}'};
 function isSup(c){return c in SUP} function isSub(c){return c in SUB}
 
 // main scanner: string -> latex
@@ -24,6 +25,7 @@ function conv(s){
       let w=s.slice(i,j);
       const ncr=w.match(/^(\d*)([nN])([CP])([rR])$/);
       if(ncr){ out+=`{}^{${ncr[1]||''}${ncr[1]?'\\!':''}n}${ncr[3]}_{r}`; i=j; continue; }
+      if(Object.prototype.hasOwnProperty.call(SUBTOKENS,w)){ out+=SUBTOKENS[w]; i=j; continue; }
       // combining accent after single letter
       if(w.length===1 && j<n && (s[j]==='\u0304'||s[j]==='\u0302')){
         out += s[j]==='\u0304' ? `\\bar{${w}}` : `\\hat{${w}}`; i=j+1; continue;
@@ -80,7 +82,7 @@ function conv(s){
     if(c==='('||c==='['){ const open=c, close=c==='('?')':']'; const g=grp(s,i,open,close); out+=`\\left${open}${resolve(fracPass(g.inner))}\\right${close}`; i=g.end; continue; }
     if(c===' '){ out+='\\;'; i++; continue; }
     if(c==='%'){ out+='\\%'; i++; continue; }
-    if(/[0-9.=<>+\-*/,;:!?()\[\]|&#@$_{}'"]/.test(c)){ out+=c==='*'?'\\cdot ':c; i++; continue; }
+    if(/[0-9.=<>+\-*/,;:!?()\[\]|&#@$_{}'"]/.test(c)){ const esc={'{':'\\{','}':'\\}','&':'\\&','#':'\\#','$':'\\$'}; out+=c==='*'?'\\cdot ':(esc[c]||c); i++; continue; }
     out+=c; i++;
   }
   return out;
@@ -91,7 +93,7 @@ function grp(s,i,open,close){ // s[i]===open; returns inner and end index after 
 }
 
 const ABBREV = new Set(['rms','mean','mp','avg','max','min','total','ext','rev','univ','rxn','cell','net','grav','spring','cm','beat','driving','natural','ice','steam','gas','water','repose','beat','top','bottom','AB','BA']);
-const WORDS = new Set(['and','or','if','is','at','to','in','on','for','with','then','else','when','only','both','same','true','false','unique','yaad','honi','chahiye','khatam','sabse','kam','hamesha','jab','bhi','me','ke','ka','hai','go','no','not','all','odd','even','per','vs','approx','const','constant','favourable','none','stick','forward','backward','up','down','left','right','products','reactants','formed','broken','charge','discharge','approach','recede','internal','external','bounded','unbounded','bright','dark','odd','even','mono','dia','sun','milk','butter']);
+const WORDS = new Set(['and','or','if','is','at','to','in','on','for','with','then','else','when','only','both','same','true','false','unique','yaad','honi','chahiye','khatam','sabse','kam','hamesha','jab','bhi','me','ke','ka','hai','go','no','not','all','odd','even','per','vs','approx','const','constant','favourable','none','stick','forward','backward','up','down','left','right','products','reactants','formed','broken','charge','discharge','approach','recede','internal','external','bounded','unbounded','bright','dark','odd','even','mono','dia','sun','milk','butter','sum','avg','air','gas','oil','cut','ppm','dry','law','use','per','msd','vsd','ev','ohm','rad']);
 const SUPC = Object.keys(SUP), SUBC = Object.keys(SUB);
 const supSet = new Set(SUPC), subSet = new Set(SUBC);
 const atomStart = /[A-Za-z0-9θλμπρστφχωαβγδεηκνΔΣΦΛΩ.''′(√[|]/;
@@ -122,7 +124,7 @@ function leftAtom(s,i){
   while(j>0){
     const c=s[j-1];
     if(c===')'||c===']'||c==='|'){
-      if(c==='|'){ let k=j-1; while(k>0&&s[k-1]!=='|')k--; if(k>0) j=k-1; else break; continue; }
+      if(c==='|'){ let k=j-1; while(k>0&&s[k-1]!=='|')k--; if(k>0) j=k-1; break; }
       const open=c===')'?'(':'['; let d=1,k=j-1;
       while(k>0&&d>0){k--;if(s[k]===c)d++;if(s[k]===open)d--;}
       j=k; continue;
@@ -176,6 +178,7 @@ function fracPass(s){
       let li=i, ri=i+1, spaced=false;
       if(s[i-1]===' '&&s[i+1]===' '){ spaced=true; li=i-1; ri=i+2; }
       let L=leftAtom(s,li), R=rightAtom(s,ri);
+      if(L&&R&&/^(ln|log|sin|cos|tan|sec|cosec|cot|sinh|cosh|tanh|lim|arg|exp|det|min|max|gcd|mod|deg|sup|inf)$/.test(R.atom)&&s[R.end]===' '&&/[A-Za-z0-9θπ(√[]/.test(s[R.end+1]||'')){ const R2=rightAtom(s,R.end+1); if(R2){ R={atom:R.atom+' '+R2.atom,end:R2.end}; } }
       if(spaced&&L&&R){
         const noWords=x=>!/[a-z]{3,}/.test(x.replace(/\x01[^\x04]*\x04/g,''));
         if(!(noWords(L.atom)&&noWords(R.atom))) { L=null; R=null; }
@@ -199,10 +202,13 @@ function matrixPass(s){
 
 const STRONG=/[=∫Σ√∮⟹⟺½⅓⅔⅖¼^±∓≈≥≤≠∝∞≡∀∃∧∨∪∩×°¹²³⁰⁴⁵⁶⁷⁸⁹ⁿʳˣ⁺⁻ᵃᵇᶜᵈᵀ₀₁₂₃₄₅₆₇₈₉ₐₑₒₓᵢᵣᵥₙₚθλμπρστφχωαβγδεηκνΔΦΛΩ']/;
 
+const FUNCPREFIX=/^(sin|cos|tan|sec|cosec|cot|sinh|cosh|tanh|ln|log|lim|arg|exp|min|max|det|mod)[A-Z0-9θπ(]/;
+const FORCEMATH=['ΣBE(bonds broken)','salt of weak acid+strong base','Condition line y=mx+c tangent','ppm =','Formal charge =','Atom economy =','Mean deviation','even coeff sum','Distance of point (x₁,y₁,z₁)','Area under y=f(x)','Parabola segment','1 MSD − 1 VSD','Screw gauge LC = pitch/N','Shear η','Elastic PE','Energy density u','y = 2A sin kx cos ωt','fringe width β','Path diff bright','half-cycle avg','Kc = α²','∧ (and)','represents pair through origin','abc + 2fgh'];
 function classify(v){
-  const words=(v.match(/[A-Za-z]{3,}/g)||[]).filter(w=>!FUNCS.has(w.toLowerCase())&&!ABBREV.has(w));
+  const words=(v.match(/[A-Za-z]{3,}/g)||[]).filter(w=>!FUNCS.has(w.toLowerCase())&&!ABBREV.has(w)&&!FUNCPREFIX.test(w)&&!Object.prototype.hasOwnProperty.call(SUBTOKENS,w));
   const strong=STRONG.test(v);
-  return {math: strong && words.length<=3, words:words.length, strong};
+  const forced=FORCEMATH.some(f=>v.includes(f))||FORCED.some(f=>v.includes(f));
+  return {math:(strong&&words.length<=3)||(forced&&strong), words:words.length, strong};
 }
 
 function readPH(s,i){ // s[i]==='\x01'; returns tag, body, end index after \x04
@@ -220,7 +226,7 @@ function depthSplit(body){ // split at depth-0 \x03
   }
   return [body,''];
 }
-const FORCED=['actual/theoretical','favourable/total','[salt]/[acid]','[salt]/[base]','molar mass/empirical mass','n = real/apparent','output/input','observed colligative/calculated','Var/Mean','distance spot/distance solvent front','lateral/longitudinal strain'];
+const FORCED=['MSD/N','pitch/N','moles solute/L solution','mass solute/mass solution','moles/kg solvent','molar mass desired product / Σ molar mass all reactants','tangential stress/shear strain','actual/theoretical','favourable/total','[salt]/[acid]','[salt]/[base]','molar mass/empirical mass','n = real/apparent','output/input','observed colligative/calculated','Var/Mean','distance spot/distance solvent front','lateral/longitudinal strain'];
 function toLatex(v){
   let s=matrixPass(v);
   for(const f of FORCED){ let idx; while((idx=s.indexOf(f))>=0){ const parts=f.split('/'); const num=parts[0]==='n = real'?parts[0]:parts[0], den=parts[1];
